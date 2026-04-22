@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gestion des étudiants - Abdoulaye Ndiaye</title>
+  <title>Gestion des étudiants Pro - Abdoulaye Ndiaye</title>
   <style>
     * {
       box-sizing: border-box;
@@ -20,7 +20,7 @@
     }
 
     .container {
-      max-width: 1000px;
+      max-width: 1100px;
       margin: 0 auto;
       background: #111827;
       border: 1px solid #334155;
@@ -38,7 +38,7 @@
     .subtitle {
       text-align: center;
       color: #94a3b8;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
 
     .form-grid {
@@ -62,11 +62,11 @@
       color: #94a3b8;
     }
 
-    .actions {
+    .top-actions {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
     }
 
     button {
@@ -87,6 +87,25 @@
       background: #7dd3fc;
     }
 
+    .update-btn {
+      background: #f59e0b;
+      color: #111827;
+    }
+
+    .update-btn:hover {
+      background: #fbbf24;
+    }
+
+    .cancel-btn {
+      background: #64748b;
+      color: white;
+    }
+
+    .cancel-btn:hover {
+      background: #94a3b8;
+      color: #0f172a;
+    }
+
     .clear-btn {
       background: #ef4444;
       color: white;
@@ -96,8 +115,21 @@
       background: #f87171;
     }
 
-    .search-box {
+    .toolbar {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 15px;
       margin-bottom: 20px;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: flex-start;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      color: #cbd5e1;
+      font-size: 0.95rem;
     }
 
     table {
@@ -129,6 +161,23 @@
       background: #1e293b;
     }
 
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .edit-btn {
+      background: #22c55e;
+      color: white;
+      padding: 8px 12px;
+    }
+
+    .edit-btn:hover {
+      background: #4ade80;
+      color: #0f172a;
+    }
+
     .delete-btn {
       background: #ef4444;
       color: white;
@@ -143,6 +192,21 @@
       text-align: center;
       color: #94a3b8;
       margin-top: 20px;
+    }
+
+    .message {
+      margin-bottom: 15px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #052e16;
+      color: #bbf7d0;
+      display: none;
+    }
+
+    @media (max-width: 850px) {
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (max-width: 768px) {
@@ -177,8 +241,10 @@
 </head>
 <body>
   <div class="container">
-    <h1>Gestion des étudiants</h1>
-    <p class="subtitle">Application simple de gestion avec sauvegarde locale</p>
+    <h1>Gestion des étudiants Pro</h1>
+    <p class="subtitle">Application de gestion avec recherche, tri, modification et sauvegarde locale</p>
+
+    <div id="messageBox" class="message"></div>
 
     <div class="form-grid">
       <input type="text" id="name" placeholder="Nom complet" />
@@ -191,13 +257,37 @@
       </select>
     </div>
 
-    <div class="actions">
-      <button class="add-btn" onclick="addStudent()">Ajouter un étudiant</button>
+    <div class="top-actions">
+      <button class="add-btn" id="addButton" onclick="addStudent()">Ajouter un étudiant</button>
+      <button class="update-btn" id="updateButton" onclick="updateStudent()" style="display: none;">Mettre à jour</button>
+      <button class="cancel-btn" id="cancelButton" onclick="cancelEdit()" style="display: none;">Annuler</button>
       <button class="clear-btn" onclick="clearStudents()">Tout supprimer</button>
     </div>
 
-    <div class="search-box">
-      <input type="text" id="search" placeholder="Rechercher un étudiant par nom ou programme" oninput="renderStudents()" />
+    <div class="toolbar">
+      <input
+        type="text"
+        id="search"
+        placeholder="Rechercher par nom ou programme"
+        oninput="renderStudents()"
+      />
+
+      <select id="sortField" onchange="renderStudents()">
+        <option value="name">Trier par nom</option>
+        <option value="program">Trier par programme</option>
+        <option value="status">Trier par statut</option>
+      </select>
+
+      <select id="sortOrder" onchange="renderStudents()">
+        <option value="asc">Ordre croissant</option>
+        <option value="desc">Ordre décroissant</option>
+      </select>
+    </div>
+
+    <div class="stats">
+      <span id="totalStudents">Total : 0</span>
+      <span id="activeStudents">Actifs : 0</span>
+      <span id="inactiveStudents">Inactifs : 0</span>
     </div>
 
     <div id="tableContainer">
@@ -224,16 +314,45 @@
     const programInput = document.getElementById('program');
     const statusInput = document.getElementById('status');
     const searchInput = document.getElementById('search');
+    const sortFieldInput = document.getElementById('sortField');
+    const sortOrderInput = document.getElementById('sortOrder');
     const studentList = document.getElementById('studentList');
     const emptyMessage = document.getElementById('emptyMessage');
+    const totalStudents = document.getElementById('totalStudents');
+    const activeStudents = document.getElementById('activeStudents');
+    const inactiveStudents = document.getElementById('inactiveStudents');
+    const addButton = document.getElementById('addButton');
+    const updateButton = document.getElementById('updateButton');
+    const cancelButton = document.getElementById('cancelButton');
+    const messageBox = document.getElementById('messageBox');
 
     let students = JSON.parse(localStorage.getItem('students')) || [];
+    let editIndex = null;
 
     function saveStudents() {
       localStorage.setItem('students', JSON.stringify(students));
     }
 
-    function addStudent() {
+    function showMessage(text) {
+      messageBox.textContent = text;
+      messageBox.style.display = 'block';
+
+      setTimeout(() => {
+        messageBox.style.display = 'none';
+      }, 2500);
+    }
+
+    function updateStats() {
+      const total = students.length;
+      const active = students.filter(student => student.status === 'Actif').length;
+      const inactive = students.filter(student => student.status === 'Inactif').length;
+
+      totalStudents.textContent = 'Total : ' + total;
+      activeStudents.textContent = 'Actifs : ' + active;
+      inactiveStudents.textContent = 'Inactifs : ' + inactive;
+    }
+
+    function validateForm() {
       const name = nameInput.value.trim();
       const age = ageInput.value.trim();
       const program = programInput.value.trim();
@@ -241,19 +360,24 @@
 
       if (!name || !age || !program || !status) {
         alert('Veuillez remplir tous les champs.');
-        return;
+        return false;
       }
 
-      students.push({
-        name,
-        age,
-        program,
-        status
-      });
+      if (Number(age) <= 0) {
+        alert('Veuillez entrer un âge valide.');
+        return false;
+      }
 
-      saveStudents();
-      renderStudents();
-      clearForm();
+      return true;
+    }
+
+    function getFormData() {
+      return {
+        name: nameInput.value.trim(),
+        age: ageInput.value.trim(),
+        program: programInput.value.trim(),
+        status: statusInput.value
+      };
     }
 
     function clearForm() {
@@ -264,10 +388,68 @@
       nameInput.focus();
     }
 
+    function addStudent() {
+      if (!validateForm()) return;
+
+      students.push(getFormData());
+      saveStudents();
+      renderStudents();
+      clearForm();
+      showMessage('Étudiant ajouté avec succès.');
+    }
+
+    function editStudent(index) {
+      const student = students[index];
+
+      nameInput.value = student.name;
+      ageInput.value = student.age;
+      programInput.value = student.program;
+      statusInput.value = student.status;
+
+      editIndex = index;
+      addButton.style.display = 'none';
+      updateButton.style.display = 'inline-block';
+      cancelButton.style.display = 'inline-block';
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+
+    function updateStudent() {
+      if (editIndex === null) return;
+      if (!validateForm()) return;
+
+      students[editIndex] = getFormData();
+      saveStudents();
+      renderStudents();
+      clearForm();
+      cancelEdit();
+      showMessage('Étudiant modifié avec succès.');
+    }
+
+    function cancelEdit() {
+      editIndex = null;
+      clearForm();
+      addButton.style.display = 'inline-block';
+      updateButton.style.display = 'none';
+      cancelButton.style.display = 'none';
+    }
+
     function deleteStudent(index) {
+      const confirmation = confirm('Voulez-vous supprimer cet étudiant ?');
+      if (!confirmation) return;
+
       students.splice(index, 1);
       saveStudents();
       renderStudents();
+
+      if (editIndex === index) {
+        cancelEdit();
+      }
+
+      showMessage('Étudiant supprimé avec succès.');
     }
 
     function clearStudents() {
@@ -278,6 +460,8 @@
         students = [];
         saveStudents();
         renderStudents();
+        cancelEdit();
+        showMessage('Tous les étudiants ont été supprimés.');
       }
     }
 
@@ -285,22 +469,34 @@
       studentList.innerHTML = '';
 
       const keyword = searchInput.value.toLowerCase().trim();
+      const sortField = sortFieldInput.value;
+      const sortOrder = sortOrderInput.value;
 
-      const filteredStudents = students.filter(student =>
-        student.name.toLowerCase().includes(keyword) ||
-        student.program.toLowerCase().includes(keyword)
-      );
+      let filteredStudents = students
+        .map((student, index) => ({ ...student, originalIndex: index }))
+        .filter(student =>
+          student.name.toLowerCase().includes(keyword) ||
+          student.program.toLowerCase().includes(keyword)
+        );
+
+      filteredStudents.sort((a, b) => {
+        const valueA = a[sortField].toLowerCase();
+        const valueB = b[sortField].toLowerCase();
+
+        if (sortOrder === 'asc') {
+          return valueA.localeCompare(valueB);
+        } else {
+          return valueB.localeCompare(valueA);
+        }
+      });
 
       if (filteredStudents.length === 0) {
         emptyMessage.style.display = 'block';
-        return;
+      } else {
+        emptyMessage.style.display = 'none';
       }
 
-      emptyMessage.style.display = 'none';
-
       filteredStudents.forEach(student => {
-        const originalIndex = students.indexOf(student);
-
         const row = document.createElement('tr');
 
         row.innerHTML = `
@@ -309,12 +505,17 @@
           <td data-label="Programme">${student.program}</td>
           <td data-label="Statut">${student.status}</td>
           <td data-label="Action">
-            <button class="delete-btn" onclick="deleteStudent(${originalIndex})">Supprimer</button>
+            <div class="action-buttons">
+              <button class="edit-btn" onclick="editStudent(${student.originalIndex})">Modifier</button>
+              <button class="delete-btn" onclick="deleteStudent(${student.originalIndex})">Supprimer</button>
+            </div>
           </td>
         `;
 
         studentList.appendChild(row);
       });
+
+      updateStats();
     }
 
     renderStudents();

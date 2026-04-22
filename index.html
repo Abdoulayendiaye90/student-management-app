@@ -258,16 +258,16 @@
     </div>
 
     <div class="top-actions">
-      <button class="add-btn" id="addButton" onclick="addStudent()">Ajouter un étudiant</button>
-      <button class="update-btn" id="updateButton" onclick="updateStudent()" style="display: none;">Mettre à jour</button>
-      <button class="cancel-btn" id="cancelButton" onclick="cancelEdit()" style="display: none;">Annuler</button>
-      <button class="clear-btn" onclick="clearStudents()">Tout supprimer</button>
-    </div>
-   <div class="top-actions">
+  <button class="add-btn" id="addButton" onclick="addStudent()">Ajouter un étudiant</button>
+  <button class="update-btn" id="updateButton" onclick="updateStudent()" style="display: none;">Mettre à jour</button>
+  <button class="cancel-btn" id="cancelButton" onclick="cancelEdit()" style="display: none;">Annuler</button>
+  <button class="clear-btn" onclick="clearStudents()">Tout supprimer</button>
+
   <button class="add-btn" onclick="exportStudents()">Exporter JSON</button>
+
   <label class="add-btn" style="display:inline-block; text-align:center;">
     Importer JSON
-    <input type="file" id="importFile" accept=".json" onchange="importStudents(event)" style="display:none;">
+    <input type="file" accept=".json" onchange="importStudents(event)" style="display:none;">
   </label>
 </div>
     <div class="toolbar">

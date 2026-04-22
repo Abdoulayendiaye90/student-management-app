@@ -523,7 +523,65 @@
 
       updateStats();
     }
+   function exportStudents() {
+  if (students.length === 0) {
+    alert('Aucun étudiant à exporter.');
+    return;
+  }
 
+  const dataStr = JSON.stringify(students, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'etudiants.json';
+  link.click();
+
+  URL.revokeObjectURL(url);
+  showMessage('Fichier JSON exporté avec succès.');
+}
+
+function importStudents(event) {
+  const file = event.target.files[0];
+
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    try {
+      const importedData = JSON.parse(e.target.result);
+
+      if (!Array.isArray(importedData)) {
+        alert('Le fichier JSON est invalide.');
+        return;
+      }
+
+      const isValid = importedData.every(student =>
+        student.name &&
+        student.age &&
+        student.program &&
+        student.status
+      );
+
+      if (!isValid) {
+        alert('Le fichier JSON ne contient pas des données valides.');
+        return;
+      }
+
+      students = importedData;
+      saveStudents();
+      renderStudents();
+      showMessage('Étudiants importés avec succès.');
+    } catch (error) {
+      alert('Erreur lors de l’importation du fichier JSON.');
+    }
+  };
+
+  reader.readAsText(file);
+  event.target.value = '';
+}
     renderStudents();
   </script>
 </body>

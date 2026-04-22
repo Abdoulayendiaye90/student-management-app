@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestion des étudiants - Abdoulaye Ndiaye</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      min-height: 100vh;
+      padding: 20px;
+      color: #e2e8f0;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: #111827;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      text-align: center;
+      color: white;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #94a3b8;
+      margin-bottom: 30px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      background: #1e293b;
+      color: white;
+      font-size: 1rem;
+    }
+
+    input::placeholder {
+      color: #94a3b8;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 25px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 12px 18px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s ease;
+    }
+
+    .add-btn {
+      background: #38bdf8;
+      color: #0f172a;
+    }
+
+    .add-btn:hover {
+      background: #7dd3fc;
+    }
+
+    .clear-btn {
+      background: #ef4444;
+      color: white;
+    }
+
+    .clear-btn:hover {
+      background: #f87171;
+    }
+
+    .search-box {
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    thead {
+      background: #1e293b;
+    }
+
+    th, td {
+      padding: 14px;
+      text-align: left;
+      border-bottom: 1px solid #334155;
+    }
+
+    th {
+      color: #38bdf8;
+    }
+
+    tbody tr {
+      background: #0f172a;
+    }
+
+    tbody tr:hover {
+      background: #1e293b;
+    }
+
+    .delete-btn {
+      background: #ef4444;
+      color: white;
+      padding: 8px 12px;
+    }
+
+    .delete-btn:hover {
+      background: #f87171;
+    }
+
+    .empty {
+      text-align: center;
+      color: #94a3b8;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 768px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+
+      thead {
+        display: none;
+      }
+
+      tr {
+        margin-bottom: 15px;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      td {
+        border-bottom: 1px solid #334155;
+      }
+
+      td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        display: block;
+        color: #38bdf8;
+        margin-bottom: 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Gestion des étudiants</h1>
+    <p class="subtitle">Application simple de gestion avec sauvegarde locale</p>
+
+    <div class="form-grid">
+      <input type="text" id="name" placeholder="Nom complet" />
+      <input type="number" id="age" placeholder="Âge" />
+      <input type="text" id="program" placeholder="Programme" />
+      <select id="status">
+        <option value="">Choisir un statut</option>
+        <option value="Actif">Actif</option>
+        <option value="Inactif">Inactif</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button class="add-btn" onclick="addStudent()">Ajouter un étudiant</button>
+      <button class="clear-btn" onclick="clearStudents()">Tout supprimer</button>
+    </div>
+
+    <div class="search-box">
+      <input type="text" id="search" placeholder="Rechercher un étudiant par nom ou programme" oninput="renderStudents()" />
+    </div>
+
+    <div id="tableContainer">
+      <table>
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Âge</th>
+            <th>Programme</th>
+            <th>Statut</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="studentList"></tbody>
+      </table>
+    </div>
+
+    <p id="emptyMessage" class="empty">Aucun étudiant enregistré.</p>
+  </div>
+
+  <script>
+    const nameInput = document.getElementById('name');
+    const ageInput = document.getElementById('age');
+    const programInput = document.getElementById('program');
+    const statusInput = document.getElementById('status');
+    const searchInput = document.getElementById('search');
+    const studentList = document.getElementById('studentList');
+    const emptyMessage = document.getElementById('emptyMessage');
+
+    let students = JSON.parse(localStorage.getItem('students')) || [];
+
+    function saveStudents() {
+      localStorage.setItem('students', JSON.stringify(students));
+    }
+
+    function addStudent() {
+      const name = nameInput.value.trim();
+      const age = ageInput.value.trim();
+      const program = programInput.value.trim();
+      const status = statusInput.value;
+
+      if (!name || !age || !program || !status) {
+        alert('Veuillez remplir tous les champs.');
+        return;
+      }
+
+      students.push({
+        name,
+        age,
+        program,
+        status
+      });
+
+      saveStudents();
+      renderStudents();
+      clearForm();
+    }
+
+    function clearForm() {
+      nameInput.value = '';
+      ageInput.value = '';
+      programInput.value = '';
+      statusInput.value = '';
+      nameInput.focus();
+    }
+
+    function deleteStudent(index) {
+      students.splice(index, 1);
+      saveStudents();
+      renderStudents();
+    }
+
+    function clearStudents() {
+      if (students.length === 0) return;
+
+      const confirmation = confirm('Voulez-vous supprimer tous les étudiants ?');
+      if (confirmation) {
+        students = [];
+        saveStudents();
+        renderStudents();
+      }
+    }
+
+    function renderStudents() {
+      studentList.innerHTML = '';
+
+      const keyword = searchInput.value.toLowerCase().trim();
+
+      const filteredStudents = students.filter(student =>
+        student.name.toLowerCase().includes(keyword) ||
+        student.program.toLowerCase().includes(keyword)
+      );
+
+      if (filteredStudents.length === 0) {
+        emptyMessage.style.display = 'block';
+        return;
+      }
+
+      emptyMessage.style.display = 'none';
+
+      filteredStudents.forEach(student => {
+        const originalIndex = students.indexOf(student);
+
+        const row = document.createElement('tr');
+
+        row.innerHTML = `
+          <td data-label="Nom">${student.name}</td>
+          <td data-label="Âge">${student.age}</td>
+          <td data-label="Programme">${student.program}</td>
+          <td data-label="Statut">${student.status}</td>
+          <td data-label="Action">
+            <button class="delete-btn" onclick="deleteStudent(${originalIndex})">Supprimer</button>
+          </td>
+        `;
+
+        studentList.appendChild(row);
+      });
+    }
+
+    renderStudents();
+  </script>
+</body>
+</html>
